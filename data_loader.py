@@ -11,6 +11,7 @@ from PIL import Image
 from build_vocab import Vocabulary
 from coco.pycocotools.coco import COCO
 
+
 class CocoDataset(data.Dataset):
     """COCO Custom Dataset compatible with torch.utils.data.DataLoader."""
     def __init__(self, root, json, topic, vocab, transform=None):
@@ -24,14 +25,34 @@ class CocoDataset(data.Dataset):
         """
 
         self.root = root
-        self.coco = COCO( json )
-        self.ids = list( self.coco.anns.keys() )
+        self.coco = COCO(json)
+
+        # ensure image path
+        ids_tmp = list(self.coco.anns.keys())
+        ids = []
+        coco = self.coco
+        for id_tmp in ids_tmp:
+            img_id = coco.anns[id_tmp]['image_id']
+            filename = coco.loadImgs(img_id)[0]['file_name']
+            if 'val2014' in filename.lower():
+                path = 'val2014/' + filename
+            elif 'train2014' in filename.lower():
+                path = 'train2014/' + filename
+            else:
+                path = 'test2014/' + filename
+
+            if os.path.isfile(os.path.join(self.root, path)):
+                ids.append(id_tmp)
+            else:
+                print("Warning: No such file or directory: %s" % os.path.join(self.root, path))
+        self.ids = ids.copy()
+
         self.vocab = vocab
         self.transform = transform
         self.topic_train = topic
 
     def __getitem__(self, index):
-        """Returns one data pair ( image, caption, image_id, T )."""
+        """Returns one data pair (image, caption, image_id, T)."""
         coco = self.coco
         vocab = self.vocab
         ann_id = self.ids[index]
@@ -46,12 +67,12 @@ class CocoDataset(data.Dataset):
         else:
             path = 'test2014/' + filename
             
-        image = Image.open( os.path.join( self.root, path ) ).convert('RGB')
+        image = Image.open(os.path.join(self.root, path)).convert('RGB')
         if self.transform is not None:
-            image = self.transform( image )
+            image = self.transform(image)
 
         # Convert caption (string) to word ids.
-        tokens = str( caption ).lower().translate( None, string.punctuation ).strip().split()
+        tokens = str(caption).lower().translate(None, string.punctuation).strip().split()
         caption = []
         caption.append(vocab('<start>'))
         caption.extend([vocab(token) for token in tokens])
@@ -67,11 +88,11 @@ class CocoDataset(data.Dataset):
                 T.extend([vocab(token) for token in image_topic])
                 break
         T = torch.Tensor(T)
-        
         return image, target, img_id, filename, T
 
     def __len__(self):
-        return len( self.ids )
+        return len(self.ids)
+
 
 def collate_fn(data):
     """Creates mini-batch tensors from the list of tuples (image, caption).
@@ -93,13 +114,13 @@ def collate_fn(data):
     """
 
     # Sort a data list by caption length (descending order).
-    data.sort( key=lambda x: len( x[1] ), reverse=True )
-    images, captions, img_ids, filenames, Topic = zip( *data ) # unzip
+    data.sort(key=lambda x: len(x[1]), reverse=True)
+    images, captions, img_ids, filenames, Topic = list(zip(*data))  # unzip
 
     # Merge images (from tuple of 3D tensor to 4D tensor).
     images = torch.stack(images, 0)
-    img_ids = list( img_ids )
-    filenames = list( filenames )
+    img_ids = list(img_ids)
+    filenames = list(filenames)
 
     # Merge captions (from tuple of 1D tensor to 2D tensor).
     lengths = [len(cap) for cap in captions]

@@ -4,25 +4,25 @@
 import json
 from random import shuffle, seed
 
-seed( 123 )
+seed(123)
 
 num_val = 5000
 num_test = 5000
 
-val = json.load( open('./data/annotations/captions_val2014.json', 'r') )
-train = json.load( open('./data/annotations/captions_train2014.json', 'r') )
+val = json.load(open('./data/annotations/captions_val2014.json', 'r'))
+train = json.load(open('./data/annotations/captions_train2014.json', 'r'))
 
 # Merge together
 imgs = val['images'] + train['images']
 annots = val['annotations'] + train['annotations']
 
-shuffle( imgs )
+shuffle(imgs)
 
 # Split into val, test, train
 dataset = {}
-dataset[ 'val' ] = imgs[ :num_val ]
-dataset[ 'test' ] = imgs[ num_val: num_val + num_test ]
-dataset[ 'train' ] = imgs[ num_val + num_test: ]
+dataset['val'] = imgs[:num_val]
+dataset['test'] = imgs[num_val: num_val + num_test]
+dataset['train'] = imgs[num_val + num_test:]
 
 # Group by image ids
 itoa = {}
@@ -36,19 +36,19 @@ json_data = {}
 info = train['info']
 licenses = train['licenses']
 
-split = [ 'test', 'val', 'train' ]
+split = ['test', 'val', 'train']
 
 for subset in split:
     
-    json_data[ subset ] = { 'type':'caption', 'info':info, 'licenses': licenses,
+    json_data[subset] = { 'type':'caption', 'info':info, 'licenses': licenses,
                            'images':[], 'annotations':[] }
     
-    for img in dataset[ subset ]:
+    for img in dataset[subset]:
         
         img_id = img['id']
-        anns = itoa[ img_id ]
+        anns = itoa[img_id]
         
-        json_data[ subset ]['images'].append( img )
-        json_data[ subset ]['annotations'].extend( anns )
+        json_data[subset]['images'].append(img)
+        json_data[subset]['annotations'].extend(anns)
         
-    json.dump( json_data[ subset ], open( './data/annotations/karpathy_split_' + subset + '.json', 'w' ) )
+    json.dump(json_data[subset], open('./data/annotations/karpathy_split_' + subset + '.json', 'w'))
