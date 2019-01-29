@@ -262,7 +262,7 @@ class Decoder(nn.Module):
             h_t, states = self.LSTM(x_t, states)
 
             # Save hidden
-            hiddens[:, time_step, :] = h_t
+            hiddens[:, time_step, :] = torch.squeeze(h_t, 1)
 
         # Data parallelism for Encoder block
         if torch.cuda.device_count() > 1:
