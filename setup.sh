@@ -1,9 +1,17 @@
 #!/usr/bin/env bash
 # nomotoeriko/simnet に合わせて作成
+# 最初に一回だけやればいい
 # -v `pwd`/data/coco:/workspace/data -v `pwd`/simNet:/workspace/simNet -v `pwd`/models:/workspace/model
 
 python simNet/KarpathySplit.py
-python3 simNet/build_vocab.py
+python simNet/build_vocab.py
+
+ln -s /workspace/data/coco2014 /workspace/data
 
 python simNet/setup.py
 cp /root/.torch/models/resnet152-b121ed2d.pth /workspace/models/  # copy to volume mounted dir
+
+
+# train
+#python simNet/train.py --model_path /workspace/models/ --pretrained_cnn /workspace/models/resnet152-b121ed2d.pth\
+# --image_dir ./data
