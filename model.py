@@ -7,7 +7,8 @@ import torch.nn.functional as F
 from torch.nn import init
 import numpy as np
 
-#=========================================simNet=========================================
+
+# =========================================simNet=========================================
 class AttentiveCNN(nn.Module):
     def __init__(self, hidden_size):
         super(AttentiveCNN, self).__init__()
@@ -31,10 +32,10 @@ class AttentiveCNN(nn.Module):
         self.affine_VI.bias.data.fill_(0)
         
     def forward(self, images):
-        '''
+        """
         Input: images
         Output: V=[v_1, ..., v_n], v_g
-        '''
+        """
         # Last conv layer feature map
         A = self.resnet_conv(images)
         
@@ -43,6 +44,7 @@ class AttentiveCNN(nn.Module):
         V = F.relu(self.affine_VI(self.dropout(V)))
 
         return V
+
 
 # Encoder Block
 class EncoderBlock(nn.Module):
@@ -75,10 +77,7 @@ class EncoderBlock(nn.Module):
         self.init_weights()
         
     def init_weights(self):
-        '''
         """Initialize the weights."""
-        '''
-
         init.xavier_uniform(self.affine_ZV.weight)
         self.affine_ZV.bias.data.fill_(0)
         init.xavier_uniform(self.affine_Zh.weight)
@@ -110,13 +109,11 @@ class EncoderBlock(nn.Module):
         self.mlp.bias.data.fill_(0)
         
     def forward(self, epoch, h_t, V, T):
-
-        '''
+        """
         Input: V=[v_1, v_2, ... v_k], h_t from LSTM and T from Topic Extractor
         Output: A probability indicating how likely the corresponding word in vocabulary D is the current output word
-        '''
-
-        # -------------------------Output Attention :z_t_output--------------------------------------------------------------------
+        """
+        # -------------------------Output Attention :z_t_output-----------------------------------------------------
         # W_ZV * V + W_Zh * h_t * 1^T
         content_V = self.affine_ZV(self.dropout(V)).unsqueeze(1) + self.affine_Zh(self.dropout(h_t)).unsqueeze(2)
 
@@ -127,7 +124,7 @@ class EncoderBlock(nn.Module):
         z_t = torch.bmm(alpha_t, V).squeeze(2)
         r_t = F.tanh(self.affine_sz(self.dropout(z_t)))
 
-        # -------------------------Topic Attention  :q_t--------------------------------------------------------------------
+        # -------------------------Topic Attention  :q_t------------------------------------------------------------
         content_T = self.affine_QT(self.dropout(T)).unsqueeze(1) + self.affine_Qh(self.dropout(h_t)).unsqueeze(2)
 
         # topic_t = W_betaq * tanh(content_T)
@@ -140,7 +137,7 @@ class EncoderBlock(nn.Module):
         # ------------------------------------------Merging Gate----------------------------------------------------
         for ip in range(r_t.size(1)):
 
-            # compute socre_s_t
+            # compute score_s_t
             s_t_ip = s_t[:, ip, :].contiguous().view(s_t.size(0), 1, s_t.size(2))
             s_t_extended = torch.cat([s_t_ip] * 5, 1)
 
@@ -152,7 +149,7 @@ class EncoderBlock(nn.Module):
             else:
                 score_s = torch.cat([score_s, score_s_t[0][ip][0].view(1, 1, 1)], 1)
 
-            # compute socre_r_t
+            # compute score_r_t
             r_t_ip = r_t[:, ip, :].contiguous().view(r_t.size(0), 1, r_t.size(2))
             r_t_extended = torch.cat([r_t_ip] * 5, 1)
 
@@ -171,11 +168,12 @@ class EncoderBlock(nn.Module):
             gama_t = F.sigmoid(score_s - score_r)
         
         # Final score along vocabulary
-        #scores = self.mlp(self.dropout(c_t))
+        # scores = self.mlp(self.dropout(c_t))
         c_t = gama_t * s_t + (1-gama_t) * r_t
         scores = self.mlp(self.dropout(c_t))
 
         return scores
+
 
 # Caption Decoder
 class Decoder(nn.Module):
@@ -244,7 +242,7 @@ class Decoder(nn.Module):
             x_t = x[:, time_step, :]
             x_t = x_t.unsqueeze(1)
 
-            #-----input attention-----
+            # -----input attention-----
             if time_step == 0:
                 x_t = torch.cat((x_t, v_g.unsqueeze(1).expand_as(x_t)), dim=2)
             else:
@@ -256,7 +254,7 @@ class Decoder(nn.Module):
                 alpha_t_input = F.softmax(visual_t_input.view(-1, visual_t_input.size(2))).view(visual_t_input.size(0),visual_t_input.size(1), -1)
                 z_t_input = torch.bmm(alpha_t_input, V_input).squeeze(2)
 
-                #x_t =[embeddings;z_t_input]
+                # x_t =[embeddings;z_t_input]
                 x_t = torch.cat((x_t, z_t_input), dim=2)
 
             h_t, states = self.LSTM(x_t, states)
@@ -274,6 +272,7 @@ class Decoder(nn.Module):
 
         # Return states for Caption Sampling purpose
         return scores, states
+
 
 # Whole Architecture with Image Encoder and Caption decoder        
 class Encoder2Decoder(nn.Module):
