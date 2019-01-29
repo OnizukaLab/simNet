@@ -26,7 +26,27 @@ class CocoDataset(data.Dataset):
 
         self.root = root
         self.coco = COCO(json)
-        self.ids = list(self.coco.anns.keys())
+
+        # ensure image path
+        ids_tmp = list(self.coco.anns.keys())
+        ids = []
+        coco = self.coco
+        for id_tmp in ids_tmp:
+            img_id = coco.anns[id_tmp]['image_id']
+            filename = coco.loadImgs(img_id)[0]['file_name']
+            if 'val2014' in filename.lower():
+                path = 'val2014/' + filename
+            elif 'train2014' in filename.lower():
+                path = 'train2014/' + filename
+            else:
+                path = 'test2014/' + filename
+
+            if os.path.isfile(os.path.join(self.root, path)):
+                ids.append(id_tmp)
+            else:
+                print("Warning: No such file or directory: %s" % os.path.join(self.root, path))
+        self.ids = ids.copy()
+
         self.vocab = vocab
         self.transform = transform
         self.topic_train = topic
@@ -68,7 +88,6 @@ class CocoDataset(data.Dataset):
                 T.extend([vocab(token) for token in image_topic])
                 break
         T = torch.Tensor(T)
-        
         return image, target, img_id, filename, T
 
     def __len__(self):
