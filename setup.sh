@@ -11,4 +11,4 @@ cp /root/.torch/models/resnet152-b121ed2d.pth /workspace/models/  # copy to volu
 
 
 # train
-#python simNet/train.py --model_path /workspace/models/ --pretrained_cnn /workspace/models/resnet152-b121ed2d.pth --image_dir ./data
+# python simNet/train.py --model_path /workspace/models/ --pretrained_cnn /workspace/models/resnet152-b121ed2d.pth --image_dir ./data
