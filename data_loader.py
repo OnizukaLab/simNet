@@ -94,7 +94,7 @@ def collate_fn(data):
 
     # Sort a data list by caption length (descending order).
     data.sort( key=lambda x: len( x[1] ), reverse=True )
-    images, captions, img_ids, filenames, Topic = zip( *data ) # unzip
+    images, captions, img_ids, filenames, Topic = list(zip( *data )) # unzip
 
     # Merge images (from tuple of 3D tensor to 4D tensor).
     images = torch.stack(images, 0)

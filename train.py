@@ -58,7 +58,7 @@ def main( args ):
         model_dict=simNet.state_dict()
         
         # 1. filter out unnecessary keys
-        pretrained_dict = {k: v for k, v in pretrained_dict.items() if k in model_dict}
+        pretrained_dict = {k: v for k, v in list(pretrained_dict.items()) if k in model_dict}
         # 2. overwrite entries in the existing state dict
         model_dict.update( pretrained_dict )
         simNet.load_state_dict( model_dict )
@@ -93,7 +93,7 @@ def main( args ):
     # Start Training 
     for epoch in range( start_epoch, args.num_epochs + 1 ):
         if epoch == args.visual_attention_epoch:
-            print 'Starting Training Visual Attention'
+            print('Starting Training Visual Attention')
             
         # Start Learning Rate Decay
         if epoch > args.lr_decay:
@@ -104,12 +104,12 @@ def main( args ):
             # Decay the learning rate
             learning_rate = args.learning_rate * decay_factor
         
-        print 'Learning Rate for Epoch %d: %.6f'%( epoch, learning_rate )
+        print('Learning Rate for Epoch %d: %.6f'%( epoch, learning_rate ))
 
         optimizer = torch.optim.Adam( params, lr=learning_rate, betas=( args.alpha, args.beta ) )
 
         # Language Modeling Training
-        print '------------------Training for Epoch %d----------------'%( epoch )
+        print('------------------Training for Epoch %d----------------'%( epoch ))
         for i, ( images, captions, lengths, _, _, T ) in enumerate( data_loader ):
 
             # Set mini-batch dataset
@@ -137,7 +137,7 @@ def main( args ):
 
             # Print log info
             if i % args.log_step == 0:
-                print 'Epoch [%d/%d], Step [%d/%d], CrossEntropy Loss: %.4f'%( epoch, args.num_epochs, i, total_step, loss.data[0] )
+                print('Epoch [%d/%d], Step [%d/%d], CrossEntropy Loss: %.4f'%( epoch, args.num_epochs, i, total_step, loss.data[0] ))
                 
         # Save the simNet model after each epoch
         torch.save( simNet.state_dict(), 
@@ -196,7 +196,7 @@ if __name__ == '__main__':
     
     args = parser.parse_args()
     
-    print '------------------------Model and Training Details--------------------------'
+    print('------------------------Model and Training Details--------------------------')
     print(args)
     
     # Start training

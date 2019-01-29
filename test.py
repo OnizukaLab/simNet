@@ -108,7 +108,7 @@ def main( args ):
     
     # Generated captions to be compared with GT
     results = []
-    print '---------------------Start evaluation on MS-COCO dataset-----------------------'
+    print('---------------------Start evaluation on MS-COCO dataset-----------------------')
     for i, (images, image_ids, _, T_val ) in enumerate( eval_data_loader ):
         
         images = to_var( images )
@@ -141,9 +141,9 @@ def main( args ):
         
         # Disp evaluation process
         if (i+1) % 10 == 0:
-            print '[%d/%d]'%( (i+1),len( eval_data_loader ) ) 
+            print('[%d/%d]'%( (i+1),len( eval_data_loader ) )) 
 
-    print '------------------------Caption Generated-------------------------------------'
+    print('------------------------Caption Generated-------------------------------------')
             
     # Evaluate the results based on the COCO API
     resFile = args.save_path
@@ -157,9 +157,9 @@ def main( args ):
     cocoEval.params['image_id'] = cocoRes.getImgIds() 
     cocoEval.evaluate()
 
-    print '-----------Evaluation performance on MS-COCO dataset----------'
-    for metric, score in cocoEval.eval.items():
-        print '%s: %.4f'%( metric, score )
+    print('-----------Evaluation performance on MS-COCO dataset----------')
+    for metric, score in list(cocoEval.eval.items()):
+        print('%s: %.4f'%( metric, score ))
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -190,7 +190,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    print '------------------------Model and Testing Details--------------------------'
+    print('------------------------Model and Testing Details--------------------------')
     print(args)
 
     # Start training

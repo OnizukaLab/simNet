@@ -266,7 +266,7 @@ class Decoder(nn.Module):
 
         # Data parallelism for Encoder block
         if torch.cuda.device_count() > 1:
-            device_ids = range( torch.cuda.device_count() )
+            device_ids = list(range( torch.cuda.device_count()))
             encoder_block_parallel = nn.DataParallel( self.encoder, device_ids=device_ids )
             scores = encoder_block_parallel( epoch, hiddens, V, T )
         else:
@@ -287,7 +287,7 @@ class Encoder2Decoder( nn.Module ):
     def forward( self, epoch, images, captions, lengths, T ):
 
         if torch.cuda.device_count() > 1:
-            device_ids = range( torch.cuda.device_count() )
+            device_ids = list(range( torch.cuda.device_count()))
             encoder_parallel = torch.nn.DataParallel( self.encoder, device_ids=device_ids )
             V = encoder_parallel( images ) 
         else:
@@ -309,7 +309,7 @@ class Encoder2Decoder( nn.Module ):
         
         # Data parallelism if multiple GPUs
         if torch.cuda.device_count() > 1:
-            device_ids = range( torch.cuda.device_count() )
+            device_ids = list(range( torch.cuda.device_count()))
             encoder_parallel = torch.nn.DataParallel( self.encoder, device_ids=device_ids )
             V = encoder_parallel( images ) 
         else:    
