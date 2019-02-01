@@ -72,7 +72,8 @@ class CocoDataset(data.Dataset):
             image = self.transform(image)
 
         # Convert caption (string) to word ids.
-        tokens = str(caption).lower().translate(None, string.punctuation).strip().split()
+        tokens = str(caption).lower().\
+            translate(str.maketrans('', '', string.punctuation)).strip().split()  # eliminate punctuations
         caption = []
         caption.append(vocab('<start>'))
         caption.extend([vocab(token) for token in tokens])

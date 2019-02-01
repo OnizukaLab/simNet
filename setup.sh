@@ -6,12 +6,9 @@
 python simNet/KarpathySplit.py
 python simNet/build_vocab.py
 
-ln -s /workspace/data/coco2014 /workspace/data
-
 python simNet/setup.py
 cp /root/.torch/models/resnet152-b121ed2d.pth /workspace/models/  # copy to volume mounted dir
 
 
 # train
-#python simNet/train.py --model_path /workspace/models/ --pretrained_cnn /workspace/models/resnet152-b121ed2d.pth\
-# --image_dir ./data
+# python simNet/train.py --model_path /workspace/models/ --pretrained_cnn /workspace/models/resnet152-b121ed2d.pth --image_dir ./data
