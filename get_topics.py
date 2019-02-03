@@ -67,10 +67,6 @@ class TopicExtractor:
         assert isfile(eval_file), MESSAGES["isfile"] % eval_file
         self.pt = utils.load_variables(eval_file)
 
-        # Set threshold_metric_name and output_metric_name
-        self.threshold_metric_name = 'prec'
-        self.output_metric_name = 'prec'
-
         self.filename_template = re.compile(r"COCO_(train|val)2014_(\d{12}).jpg")
         self.bs = args.bs
         self.topic_num = args.topic_num
@@ -79,7 +75,6 @@ class TopicExtractor:
     def topic_extract(self):
         """
         Extraxt the topics from image list
-        :param images: a list of images
         :return: topic list [{image_id: 9, image_concepts: [dog, cat, ...]}, ...]
         """
         image_topics = []
