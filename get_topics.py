@@ -15,6 +15,7 @@ from test_model import upsample_image
 import re
 import sys
 import json
+from pprint import pprint
 
 
 MESSAGES = {
@@ -73,6 +74,7 @@ class TopicExtractor:
         self.filename_template = re.compile(r"COCO_(train|val)2014_(\d{12}).jpg")
         self.bs = args.bs
         self.topic_num = args.topic_num
+        self.tgt = args.tgt
 
     def topic_extract(self):
         """
@@ -81,62 +83,63 @@ class TopicExtractor:
         :return: topic list [{image_id: 9, image_concepts: [dog, cat, ...]}, ...]
         """
         image_topics = []
-
-        # For val data
-        print("val2014")
         image_id_batch = []
         image_batch = []
-        for image_file in listdir(join(self.coco, "val2014")):
-            m = self.filename_template.match(image_file)
-            if m:
-                image_id = int(m.group(2))
-                image_id_batch.append(image_id)
+        # For val data
+        if "val" in self.tgt:
+            print("val2014")
+            for image_file in listdir(join(self.coco, "val2014")):
+                m = self.filename_template.match(image_file)
+                if m:
+                    image_id = int(m.group(2))
+                    image_id_batch.append(image_id)
 
-                im = cv2.imread(join(self.coco, "val2014", image_file))
-                image_batch.append(im)
+                    im = cv2.imread(join(self.coco, "val2014", image_file))
+                    image_batch.append(im)
 
-            if len(image_id_batch) == self.bs:
-                sys.stdout.write("*")
-                sys.stdout.flush()
-                prec = self.__mk_prec_from_batch(image_batch)
-                for i in range(self.bs):
-                    topics = self.__output_words_image(prec[i, :])
-                    im_id = image_id_batch[i]
-                    if len(topics) != self.topic_num:
-                        print(MESSAGES["topic_num"] % (self.topic_num, im_id, " ".join(topics)))
-                    image_topics.append(
-                        {"image_id": im_id, "image_concepts": topics}
-                    )
-                # Delete current batch
-                image_id_batch = []
-                image_batch = []
-
+                if len(image_id_batch) == self.bs:
+                    sys.stdout.write("*")
+                    sys.stdout.flush()
+                    prec = self.__mk_prec_from_batch(image_batch)
+                    for i in range(self.bs):
+                        topics = self.__output_words_image(prec[i, :])
+                        im_id = image_id_batch[i]
+                        if len(topics) != self.topic_num:
+                            print(MESSAGES["topic_num"] % (self.topic_num, im_id, " ".join(topics)))
+                        image_topics.append(
+                            {"image_id": im_id, "image_concepts": topics}
+                        )
+                    # Delete current batch
+                    image_id_batch = []
+                    image_batch = []
+ 
         # For train (if val data remains, mixed)
-        print("\ntrain2014")
-        for image_file in listdir(join(self.coco, "train2014")):
-            m = self.filename_template.match(image_file)
-            if m:
-                image_id = int(m.group(2))
-                image_id_batch.append(image_id)
+        if "train" in self.tgt:
+            print("\ntrain2014")
+            for image_file in listdir(join(self.coco, "train2014")):
+                m = self.filename_template.match(image_file)
+                if m:
+                    image_id = int(m.group(2))
+                    image_id_batch.append(image_id)
 
-                im = cv2.imread(join(self.coco, "train2014", image_file))
-                image_batch.append(im)
+                    im = cv2.imread(join(self.coco, "train2014", image_file))
+                    image_batch.append(im)
 
-            if len(image_id_batch) == self.bs:
-                sys.stdout.write("*")
-                sys.stdout.flush()
-                prec = self.__mk_prec_from_batch(image_batch)
-                for i in range(self.bs):
-                    topics = self.__output_words_image(prec[i, :])
-                    im_id = image_id_batch[i]
-                    if len(topics) != self.topic_num:
-                        print(MESSAGES["topic_num"] % (self.topic_num, im_id, " ".join(topics)))
-                    image_topics.append(
-                        {"image_id": im_id, "image_concepts": topics}
-                    )
-                # Delete current batch
-                image_id_batch = []
-                image_batch = []
+                if len(image_id_batch) == self.bs:
+                    sys.stdout.write("*")
+                    sys.stdout.flush()
+                    prec = self.__mk_prec_from_batch(image_batch)
+                    for i in range(self.bs):
+                        topics = self.__output_words_image(prec[i, :])
+                        im_id = image_id_batch[i]
+                        if len(topics) != self.topic_num:
+                            print(MESSAGES["topic_num"] % (self.topic_num, im_id, " ".join(topics)))
+                        image_topics.append(
+                            {"image_id": im_id, "image_concepts": topics}
+                        )
+                    # Delete current batch
+                    image_id_batch = []
+                    image_batch = []
 
         # For remaining batch
         if image_id_batch:
@@ -182,7 +185,7 @@ class TopicExtractor:
 
         # Compute precision mapping
         prec = np.zeros(mil_prob.shape)
-        for jj in xrange(prec.shape[1]):
+        for jj in range(prec.shape[1]):
             prec[:, jj] = cap_eval_utils.compute_precision_score_mapping(
                 self.pt['details']['score'][:, jj] * 1,
                 self.pt['details']['precision'][:, jj] * 1,
@@ -208,6 +211,8 @@ if __name__ == "__main__":
                         type=str, dest="coco")
     parser.add_argument("--output", default="image_topics.json",
                         type=str, dest="output")
+    parser.add_argument("--tgt", default="val_train",
+                        type=str, dest="tgt")
     # -------------------------Model Settings---------------------------------------------------------
     parser.add_argument("--vocab_file", default="./code/vocabs/vocab_train.pkl",
                         type=str, dest="vocab")
@@ -220,6 +225,8 @@ if __name__ == "__main__":
     parser.add_argument("--topic_num", default=10,
                         type=int, dest="topic_num")
     args = parser.parse_args()
+    print("Settings:")
+    pprint(args)
 
     # Topic extraction
     e = TopicExtractor(args)
