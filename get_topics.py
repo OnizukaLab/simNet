@@ -68,7 +68,7 @@ class TopicExtractor:
         assert isfile(eval_file), MESSAGES["isfile"] % eval_file
         self.pt = utils.load_variables(eval_file)
 
-        self.filename_template = re.compile(r"COCO_(train|val)2014_(\d{12}).jpg")
+        self.filename_template = re.compile(r"COCO_(train|val|test)2014_(\d{12}).jpg")
         self.bs = args.bs
         self.topic_num = args.topic_num
         self.tgt = args.tgt
