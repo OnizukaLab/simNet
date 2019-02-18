@@ -57,7 +57,7 @@ def main(args):
         
     elif args.pretrained_cnn:
         pretrained_dict = torch.load(args.pretrained_cnn)
-        model_dict=simNet.state_dict()
+        model_dict = simNet.state_dict()
         
         # 1. filter out unnecessary keys
         pretrained_dict = {k: v for k, v in list(pretrained_dict.items()) if k in model_dict}

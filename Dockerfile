@@ -1,4 +1,4 @@
-FROM pytorch/pytorch:latest
+FROM pytorch/pytorch:0.4.1-cuda9-cudnn7-devel
 
 RUN git clone https://github.com/lancopku/simNet.git
 RUN git clone https://github.com/tylin/coco-caption.git coco
