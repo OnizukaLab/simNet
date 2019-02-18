@@ -36,7 +36,7 @@ def main(args):
     # Image Preprocessing
     # For normalization, see https://github.com/pytorch/vision#models
     transform = transforms.Compose([
-        transforms.RandomCrop(args.crop_size),
+        transforms.RandomResizedCrop(args.crop_size),
         transforms.RandomHorizontalFlip(), 
         transforms.ToTensor(), 
         transforms.Normalize((0.485, 0.456, 0.406),
