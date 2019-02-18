@@ -32,6 +32,7 @@ class TopicExtractor:
         assert isdir(args.coco), MESSAGES["isdir"] % args.coco
         assert isdir(join(args.coco, "train2014")), MESSAGES["isdir"] % join(args.coco, "train2014")
         assert isdir(join(args.coco, "val2014")), MESSAGES["isdir"] % join(args.coco, "val2014")
+        assert isdir(join(args.coco, "test2014")), MESSAGES["isdir"] % join(args.coco, "test2014")
         self.coco = args.coco
         if isfile(args.output):
             comm = input(MESSAGES["not_isfile"] % args.output)
@@ -67,7 +68,7 @@ class TopicExtractor:
         assert isfile(eval_file), MESSAGES["isfile"] % eval_file
         self.pt = utils.load_variables(eval_file)
 
-        self.filename_template = re.compile(r"COCO_(train|val)2014_(\d{12}).jpg")
+        self.filename_template = re.compile(r"COCO_(train|val|test)2014_(\d{12}).jpg")
         self.bs = args.bs
         self.topic_num = args.topic_num
         self.tgt = args.tgt
@@ -90,6 +91,34 @@ class TopicExtractor:
                     image_id_batch.append(image_id)
 
                     im = cv2.imread(join(self.coco, "val2014", image_file))
+                    image_batch.append(im)
+
+                if len(image_id_batch) == self.bs:
+                    sys.stdout.write("*")
+                    sys.stdout.flush()
+                    prec = self.__mk_prec_from_batch(image_batch)
+                    for i in range(self.bs):
+                        topics = self.__output_words_image(prec[i, :])
+                        im_id = image_id_batch[i]
+                        if len(topics) != self.topic_num:
+                            print(MESSAGES["topic_num"] % (self.topic_num, im_id, " ".join(topics)))
+                        image_topics.append(
+                            {"image_id": im_id, "image_concepts": topics}
+                        )
+                    # Delete current batch
+                    image_id_batch = []
+                    image_batch = []
+
+        # For test data
+        if "test" in self.tgt:
+            print("test2014")
+            for image_file in listdir(join(self.coco, "test2014")):
+                m = self.filename_template.match(image_file)
+                if m:
+                    image_id = int(m.group(2))
+                    image_id_batch.append(image_id)
+
+                    im = cv2.imread(join(self.coco, "test2014", image_file))
                     image_batch.append(im)
 
                 if len(image_id_batch) == self.bs:
