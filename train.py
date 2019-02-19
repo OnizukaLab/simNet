@@ -201,6 +201,8 @@ if __name__ == '__main__':
     
     print('------------------------Model and Training Details--------------------------')
     print(args)
+
+    print("GPU count", torch.cuda.device_count())
     
     # Start training
     main(args)
