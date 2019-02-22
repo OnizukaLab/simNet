@@ -23,6 +23,7 @@ def to_var(x, volatile=False):
         x = x.cuda()
     return Variable(x, volatile=volatile)
 
+
 # MS COCO evaluation data loader
 class CocoEvalLoader(datasets.ImageFolder):
     def __init__(self, root, ann_path, topic_path, transform=None, target_transform=None,
@@ -37,21 +38,22 @@ class CocoEvalLoader(datasets.ImageFolder):
         self.target_transform = target_transform
         self.loader = loader
         self.imgs = json.load(open(ann_path, 'r'))['images']
-        self.image_topic = json.load(open(topic_path , 'r'))
+        self.samples = self.imgs
+        self.image_topic = json.load(open(topic_path, 'r'))
 
     def __getitem__(self, index):
 
         filename = self.imgs[index]['file_name']
         img_id = self.imgs[index]['id']
-        
+
         # Filename for the image
         if 'val2014' in filename.lower():
-            path = os.path.join(self.root, 'val2014' , filename)
+            path = os.path.join(self.root, 'val2014', filename)
         elif 'train2014' in filename.lower():
-            path = os.path.join(self.root, 'train2014' , filename)
+            path = os.path.join(self.root, 'train2014', filename)
         else:
             path = os.path.join(self.root, 'test2014', filename)
-            
+
         # Load the vocabulary
         with open('vocab.pkl', 'rb') as f:
             vocab = pickle.load(f)
@@ -67,18 +69,16 @@ class CocoEvalLoader(datasets.ImageFolder):
                 image_topic = topic['image_concepts']
                 T_val.extend([vocab(token) for token in image_topic])
                 break
-                
         T_val = torch.LongTensor(T_val)
         
         return img, img_id, filename, T_val
 
-# MSCOCO Evaluation function
+
 def main(args):
-    
-    '''
+    """
     model: trained model to be evaluated
     args: parameters
-    '''
+    """
     # Load vocabulary wrapper.
     with open(args.vocab_path, 'rb') as f:
         vocab = pickle.load(f)
@@ -91,26 +91,27 @@ def main(args):
         model.cuda()
 
     model.eval()
-    
+
     transform = transforms.Compose([
         transforms.Resize((args.crop_size, args.crop_size)),
-        transforms.ToTensor(), 
-        transforms.Normalize((0.485, 0.456, 0.406), 
+        transforms.ToTensor(),
+        transforms.Normalize((0.485, 0.456, 0.406),
                              (0.229, 0.224, 0.225))])
 
     # Wrapper the COCO VAL dataset
     eval_data_loader = torch.utils.data.DataLoader(
         CocoEvalLoader(args.image_dir, args.caption_test_path, args.topic_path, transform),
-        batch_size = args.eval_size, 
-        shuffle = False, num_workers = args.num_workers,
-        drop_last = False)
+        batch_size=args.eval_size,
+        shuffle=False,
+        num_workers=args.num_workers,
+        drop_last=False)
     epoch = int(args.trained.split('/')[-1].split('-')[1].split('.')[0])
-    
+
     # Generated captions to be compared with GT
     results = []
     print('---------------------Start evaluation on MS-COCO dataset-----------------------')
     for i, (images, image_ids, _, T_val) in enumerate(eval_data_loader):
-        
+
         images = to_var(images)
         T_val = to_var(T_val)
         generated_captions = model.sampler(epoch, images, T_val)
@@ -122,44 +123,46 @@ def main(args):
 
         # Build caption based on Vocabulary and the '<end>' token
         for image_idx in range(captions.shape[0]):
-            
+
             sampled_ids = captions[image_idx]
             sampled_caption = []
-            
+
             for word_id in sampled_ids:
-                
+
                 word = vocab.idx2word[word_id]
                 if word == '<end>':
                     break
                 else:
                     sampled_caption.append(word)
-            
+
             sentence = ' '.join(sampled_caption)
-            
-            temp = { 'image_id': int(image_ids[image_idx]), 'caption': sentence}
+
+            temp = {'image_id': int(image_ids[image_idx]), 'caption': sentence}
             results.append(temp)
-        
+
         # Disp evaluation process
         if (i+1) % 10 == 0:
-            print('[%d/%d]'%((i+1),len(eval_data_loader)))
+            print('[%d/%d]' % ((i+1), len(eval_data_loader)))
 
     print('------------------------Caption Generated-------------------------------------')
-            
+
     # Evaluate the results based on the COCO API
     resFile = args.save_path
     json.dump(results, open(resFile , 'w'))
-    
+
     annFile = args.caption_test_path
     coco = COCO(annFile)
     cocoRes = coco.loadRes(resFile)
-    
+
     cocoEval = COCOEvalCap(coco, cocoRes)
-    cocoEval.params['image_id'] = cocoRes.getImgIds() 
+    cocoEval.params['image_id'] = cocoRes.getImgIds()
     cocoEval.evaluate()
 
     print('-----------Evaluation performance on MS-COCO dataset----------')
     for metric, score in list(cocoEval.eval.items()):
-        print('%s: %.4f'%(metric, score))
+        print('%s: %.4f' % (metric, score))
+# MSCOCO Evaluation function
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
