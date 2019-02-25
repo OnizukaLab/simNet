@@ -14,7 +14,7 @@ from coco.pycocotools.coco import COCO
 
 class CocoDataset(data.Dataset):
     """COCO Custom Dataset compatible with torch.utils.data.DataLoader."""
-    def __init__(self, root, json, topic, vocab, transform=None):
+    def __init__(self, root, json, topic, vocab, transform=None, topic_num=5):
         """Set the path for images, captions and vocabulary wrapper.
         
         Args:
@@ -50,6 +50,7 @@ class CocoDataset(data.Dataset):
         self.vocab = vocab
         self.transform = transform
         self.topic_train = topic
+        self.topic_num = topic_num
 
     def __getitem__(self, index):
         """Returns one data pair (image, caption, image_id, T)."""
@@ -85,7 +86,7 @@ class CocoDataset(data.Dataset):
         T = []
         for topic in self.topic_train:
             if topic['image_id'] == img_id:
-                image_topic = topic['image_concepts'] 
+                image_topic = topic['image_concepts'][:self.topic_num]
                 T.extend([vocab(token) for token in image_topic])
                 break
         T = torch.Tensor(T)

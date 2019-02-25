@@ -121,7 +121,7 @@ class EncoderBlock(nn.Module):
         visual_t = self.affine_alphaz(self.dropout(F.tanh(content_V))).squeeze(3)
         alpha_t = F.softmax(visual_t.view(-1, visual_t.size(2))).view(visual_t.size(0), visual_t.size(1), -1)
 
-        z_t = torch.bmm(alpha_t, V).squeeze(2)
+        z_t = torch.bmm(alpha_t, V).squeeze(2)  # ここが画像アテンション？
         r_t = F.tanh(self.affine_sz(self.dropout(z_t)))
 
         # -------------------------Topic Attention  :q_t------------------------------------------------------------
@@ -131,7 +131,7 @@ class EncoderBlock(nn.Module):
         topic_t = self.affine_betaq(self.dropout(F.tanh(content_T))).squeeze(3)
         beta_t = F.softmax(topic_t.view(-1, topic_t.size(2))).view(topic_t.size(0), topic_t.size(1), -1)
 
-        q_t = torch.bmm(beta_t, T).squeeze(2)
+        q_t = torch.bmm(beta_t, T).squeeze(2)  # ここがトピックアテンション
         s_t = F.tanh(self.affine_sq(self.dropout(q_t)) + self.affine_sh(self.dropout(h_t)))
 
         # ------------------------------------------Merging Gate----------------------------------------------------
@@ -169,10 +169,12 @@ class EncoderBlock(nn.Module):
         
         # Final score along vocabulary
         # scores = self.mlp(self.dropout(c_t))
-        c_t = gama_t * s_t + (1-gama_t) * r_t
+        c_t = gama_t * s_t + (1-gama_t) * r_t  # eq15
         scores = self.mlp(self.dropout(c_t))
 
-        return scores
+
+
+        return scores, z_t, q_t
 
 
 # Caption Decoder
@@ -314,6 +316,44 @@ class Encoder2Decoder(nn.Module):
         else:    
             V = self.encoder(images)
             
+        # Build the starting token Variable <start> (index 1): B x 1
+        if torch.cuda.is_available():
+            captions = Variable(torch.LongTensor(images.size(0), 1).fill_(1).cuda())
+        else:
+            captions = Variable(torch.LongTensor(images.size(0), 1).fill_(1))
+
+        # Get generated caption idx list
+        sampled_ids = []
+
+        # Initial hidden states
+        states = None
+
+        for i in range(max_len):
+            scores, states = self.decoder(epoch, V, captions, T, states)
+            captions = scores.max(2)[1]
+
+            # Save sampled word
+            sampled_ids.append(captions)
+
+        # caption: B x max_len
+        sampled_ids = torch.cat(sampled_ids, dim=1)
+
+        return sampled_ids
+
+    # TTI data generator
+    def sampler(self, epoch, images, T, max_len=20):
+        """
+        Samples captions and annotations for given image features.
+        """
+
+        # Data parallelism if multiple GPUs
+        if torch.cuda.device_count() > 1:
+            device_ids = list(range(torch.cuda.device_count()))
+            encoder_parallel = torch.nn.DataParallel(self.encoder, device_ids=device_ids)
+            V = encoder_parallel(images)
+        else:
+            V = self.encoder(images)
+
         # Build the starting token Variable <start> (index 1): B x 1
         if torch.cuda.is_available():
             captions = Variable(torch.LongTensor(images.size(0), 1).fill_(1).cuda())
