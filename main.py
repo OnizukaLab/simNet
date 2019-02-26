@@ -101,17 +101,17 @@ def main(args):
         if (i+1) % 10 == 0:
             print('[%d/%d]' % ((i+1), len(eval_data_loader)))
 
-        print('------------------------Caption Generated-------------------------------------')
-        with open(args.save_name + "_caption.json", "w") as f:
-            json.dump(results, f)
+    print('------------------------Caption Generated-------------------------------------')
+    with open(args.save_name + "_caption.json", "w") as f:
+        json.dump(results, f)
 
-        with open(args.save_name + "_image_attn.pickle", "wb") as f:
-            pickle.dump(results_image_attn, f)
+    with open(args.save_name + "_image_attn.pickle", "wb") as f:
+        pickle.dump(results_image_attn, f)
 
-        with open(args.save_name + "_topic_attn.pickle", "wb") as f:
-            pickle.dump(results_topic_attn, f)
+    with open(args.save_name + "_topic_attn.pickle", "wb") as f:
+        pickle.dump(results_topic_attn, f)
 
-        print('------------------------Results Saved-------------------------------------')
+    print('------------------------Results Saved-------------------------------------')
 
 
 if __name__ == '__main__':
