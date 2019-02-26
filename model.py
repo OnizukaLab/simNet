@@ -339,7 +339,7 @@ class Encoder2Decoder(nn.Module):
 
         # caption: B x max_len
         sampled_ids = torch.cat(sampled_ids, dim=1)
-        # image_attns = torch.cat(image_attns, dim=1)  # いるかもしれない
-        # topic_attns = torch.cat(topic_attns, dim=1)
+        image_attns = torch.cat(image_attns, dim=1)  # いるかもしれない
+        topic_attns = torch.cat(topic_attns, dim=1)
 
         return sampled_ids, image_attns, topic_attns
