@@ -121,7 +121,7 @@ class EncoderBlock(nn.Module):
         visual_t = self.affine_alphaz(self.dropout(F.tanh(content_V))).squeeze(3)
         alpha_t = F.softmax(visual_t.view(-1, visual_t.size(2))).view(visual_t.size(0), visual_t.size(1), -1)
 
-        z_t = torch.bmm(alpha_t, V).squeeze(2)  # ここが画像アテンション？
+        z_t = torch.bmm(alpha_t, V).squeeze(2)
         r_t = F.tanh(self.affine_sz(self.dropout(z_t)))
 
         # -------------------------Topic Attention  :q_t------------------------------------------------------------
@@ -131,7 +131,7 @@ class EncoderBlock(nn.Module):
         topic_t = self.affine_betaq(self.dropout(F.tanh(content_T))).squeeze(3)
         beta_t = F.softmax(topic_t.view(-1, topic_t.size(2))).view(topic_t.size(0), topic_t.size(1), -1)
 
-        q_t = torch.bmm(beta_t, T).squeeze(2)  # ここがトピックアテンション
+        q_t = torch.bmm(beta_t, T).squeeze(2)
         s_t = F.tanh(self.affine_sq(self.dropout(q_t)) + self.affine_sh(self.dropout(h_t)))
 
         # ------------------------------------------Merging Gate----------------------------------------------------
@@ -172,9 +172,7 @@ class EncoderBlock(nn.Module):
         c_t = gama_t * s_t + (1-gama_t) * r_t  # eq15
         scores = self.mlp(self.dropout(c_t))
 
-
-
-        return scores, z_t, q_t
+        return scores, alpha_t, beta_t
 
 
 # Caption Decoder
@@ -220,7 +218,7 @@ class Decoder(nn.Module):
         
         # Reduce the feature map dimension
         V_input = F.relu(self.affine_b(self.dropout(V)))
-        v_g = torch.mean(V_input,dim=1)
+        v_g = torch.mean(V_input, dim=1)
 
         # Word Embedding
         embeddings = self.embed(captions)
@@ -268,12 +266,12 @@ class Decoder(nn.Module):
         if torch.cuda.device_count() > 1:
             device_ids = list(range(torch.cuda.device_count()))
             encoder_block_parallel = nn.DataParallel(self.encoder, device_ids=device_ids)
-            scores = encoder_block_parallel(epoch, hiddens, V, T)
+            scores, image_attn, topic_attn = encoder_block_parallel(epoch, hiddens, V, T)
         else:
-            scores = self.encoder(epoch, hiddens, V, T)
+            scores, image_attn, topic_attn = self.encoder(epoch, hiddens, V, T)
 
         # Return states for Caption Sampling purpose
-        return scores, states
+        return scores, states, image_attn, topic_attn
 
 
 # Whole Architecture with Image Encoder and Caption decoder        
@@ -295,7 +293,7 @@ class Encoder2Decoder(nn.Module):
             V = self.encoder(images)
 
         # Language Modeling on word prediction
-        scores, _ = self.decoder(epoch, V, captions, T)
+        scores, *_ = self.decoder(epoch, V, captions, T)
 
         # Pack it to make criterion calculation more efficient
         packed_scores = pack_padded_sequence(scores, lengths, batch_first=True)
@@ -324,56 +322,24 @@ class Encoder2Decoder(nn.Module):
 
         # Get generated caption idx list
         sampled_ids = []
+        image_attns = []
+        topic_attns = []
 
         # Initial hidden states
         states = None
 
         for i in range(max_len):
-            scores, states = self.decoder(epoch, V, captions, T, states)
+            scores, states, image_attn, topic_attn = self.decoder(epoch, V, captions, T, states)
             captions = scores.max(2)[1]
 
             # Save sampled word
             sampled_ids.append(captions)
+            image_attns.append(image_attn)
+            topic_attns.append(topic_attn)
 
         # caption: B x max_len
         sampled_ids = torch.cat(sampled_ids, dim=1)
+        image_attns = torch.cat(image_attns, dim=1)  # いるかもしれない
+        topic_attns = torch.cat(topic_attns, dim=1)
 
-        return sampled_ids
-
-    # TTI data generator
-    def sampler(self, epoch, images, T, max_len=20):
-        """
-        Samples captions and annotations for given image features.
-        """
-
-        # Data parallelism if multiple GPUs
-        if torch.cuda.device_count() > 1:
-            device_ids = list(range(torch.cuda.device_count()))
-            encoder_parallel = torch.nn.DataParallel(self.encoder, device_ids=device_ids)
-            V = encoder_parallel(images)
-        else:
-            V = self.encoder(images)
-
-        # Build the starting token Variable <start> (index 1): B x 1
-        if torch.cuda.is_available():
-            captions = Variable(torch.LongTensor(images.size(0), 1).fill_(1).cuda())
-        else:
-            captions = Variable(torch.LongTensor(images.size(0), 1).fill_(1))
-
-        # Get generated caption idx list
-        sampled_ids = []
-
-        # Initial hidden states
-        states = None
-
-        for i in range(max_len):
-            scores, states = self.decoder(epoch, V, captions, T, states)
-            captions = scores.max(2)[1]
-
-            # Save sampled word
-            sampled_ids.append(captions)
-
-        # caption: B x max_len
-        sampled_ids = torch.cat(sampled_ids, dim=1)
-
-        return sampled_ids
+        return sampled_ids, image_attns, topic_attns
