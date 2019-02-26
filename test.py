@@ -114,7 +114,7 @@ def main(args):
 
         images = to_var(images)
         T_val = to_var(T_val)
-        generated_captions = model.sampler(epoch, images, T_val)
+        generated_captions, *_ = model.sampler(epoch, images, T_val)
 
         if torch.cuda.is_available():
             captions = generated_captions.cpu().data.numpy()
@@ -148,7 +148,7 @@ def main(args):
 
     # Evaluate the results based on the COCO API
     resFile = args.save_path
-    json.dump(results, open(resFile , 'w'))
+    json.dump(results, open(resFile, 'w'))
 
     annFile = args.caption_test_path
     coco = COCO(annFile)
