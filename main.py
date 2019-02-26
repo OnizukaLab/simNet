@@ -15,7 +15,7 @@ from coco.pycocotools.coco import COCO
 from coco.pycocoevalcap.eval import COCOEvalCap
 import matplotlib.pyplot as plt
 
-from .test import to_var, CocoEvalLoader
+from test import to_var, CocoEvalLoader
 
 def main(args):
     # Load vocabulary wrapper.
