@@ -17,6 +17,7 @@ import matplotlib.pyplot as plt
 
 from test import to_var, CocoEvalLoader
 
+
 def main(args):
     # Load vocabulary wrapper.
     with open(args.vocab_path, "rb") as f:
@@ -50,8 +51,6 @@ def main(args):
 
     # Generated captions to be compared with GT
     results = []
-    results_image_attn = []
-    results_topic_attn = []
     print('---------------------Start evaluation on MS-COCO dataset-----------------------')
     for i, (images, image_ids, _, T_val) in enumerate(eval_data_loader):
 
@@ -68,8 +67,8 @@ def main(args):
             image_attns = image_attns.data.numpy()
             topic_attns = topic_attns.data.numpy()
 
-        print("IMAGE ATTN. SIZE: ", image_attns.shape)
-        print("TOPIC ATTN. SIZE: ", topic_attns.shape)
+        # print("IMAGE ATTN. SIZE: ", image_attns.shape)
+        # print("TOPIC ATTN. SIZE: ", topic_attns.shape)
 
         # Build caption based on Vocabulary and the '<end>' token
         for image_idx in range(captions.shape[0]):
@@ -78,8 +77,8 @@ def main(args):
             sampled_image_attns = image_attns[image_idx]
             sampled_topic_attns = topic_attns[image_idx]
             sampled_caption = []
-            final_image_attns = []
-            final_topic_attns = []
+            # final_image_attns = []
+            # final_topic_attns = []
 
             for word_id in sampled_ids:
 
@@ -92,24 +91,19 @@ def main(args):
             final_topic_attns = sampled_topic_attns[:len(sampled_caption)]
             sentence = ' '.join(sampled_caption)
 
-            temp = {'image_id': int(image_ids[image_idx]), 'caption': sentence}
+            temp = {'image_id': int(image_ids[image_idx]),
+                    'caption': sentence,
+                    "image_attn": final_image_attns.tolist(),  # caption len * 49
+                    "topic_attn": final_topic_attns.tolist()}  # caption len * topic num
             results.append(temp)
-            results_image_attn.append(final_image_attns)
-            results_topic_attn.append(final_topic_attns)
 
         # Disp evaluation process
         if (i+1) % 10 == 0:
             print('[%d/%d]' % ((i+1), len(eval_data_loader)))
 
     print('------------------------Caption Generated-------------------------------------')
-    with open(args.save_name + "_caption.json", "w") as f:
-        json.dump(results, f)
-
-    with open(args.save_name + "_image_attn.pickle", "wb") as f:
-        pickle.dump(results_image_attn, f)
-
-    with open(args.save_name + "_topic_attn.pickle", "wb") as f:
-        pickle.dump(results_topic_attn, f)
+    with open(args.save_path, "wb") as f:
+        pickle.dump(results, f)
 
     print('------------------------Results Saved-------------------------------------')
 
@@ -132,7 +126,7 @@ if __name__ == '__main__':
                         help='path for test topic json file')
 
     # ---------------------------Hyper Parameter Setup------------------------------------
-    parser.add_argument('--save_name', type=str, default='generated_by_main')
+    parser.add_argument('--save_path', type=str, default='generated_by_main.pickle')
     parser.add_argument('--embed_size', type=int, default=256,
                         help='dimension of word embedding vectors, also dimension of v_g')
     parser.add_argument('--hidden_size', type=int, default=512,
