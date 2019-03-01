@@ -142,6 +142,7 @@ def main(args):
                 print('Epoch [%d/%d], Step [%d/%d], CrossEntropy Loss: %.4f'
                       % (epoch, args.num_epochs, i, total_step, loss.item()))
                 
+        simNet.encoder.log_file.close()
         # Save the simNet model after each epoch
         torch.save(simNet.state_dict(), os.path.join(args.model_path, 'simNet-%d.pkl' % (epoch,)))
 
