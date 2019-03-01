@@ -6,6 +6,7 @@ from torch.autograd import Variable
 import torch.nn.functional as F
 from torch.nn import init
 import numpy as np
+from random import random
 
 
 # =========================================simNet=========================================
@@ -46,17 +47,18 @@ class AttentiveCNN(nn.Module):
         V = A.view(A.size(0), A.size(1), -1).transpose(1,2)
         V = F.relu(self.affine_VI(self.dropout(V)))
 
-        print("LOG:", ", ".join("{:.3f}" for _ in range(9)).format(
-            A.mean().data.cpu().numpy(),
-            A.std().data.cpu().numpy(),
-            A.max().data.cpu().numpy(),
-            A.min().data.cpu().numpy(),
-            V.mean().data.cpu().numpy(),
-            V.std().data.cpu().numpy(),
-            V.max().data.cpu().numpy(),
-            V.min().data.cpu().numpy(),
-            self.affine_VI.weight.data.cpu().numpy()[0, 0]
-        ))
+        if random() > 0.8:
+            print("LOG:", ", ".join("{:.3f}" for _ in range(9)).format(
+                A.mean().data.cpu().numpy(),
+                A.std().data.cpu().numpy(),
+                A.max().data.cpu().numpy(),
+                A.min().data.cpu().numpy(),
+                V.mean().data.cpu().numpy(),
+                V.std().data.cpu().numpy(),
+                V.max().data.cpu().numpy(),
+                V.min().data.cpu().numpy(),
+                self.affine_VI.weight.data.cpu().numpy()[0, 0]
+            ))
 
         print("LOG:", ", ".join("{}" for _ in range(9)).format(
             A.mean().data.cpu().numpy(),

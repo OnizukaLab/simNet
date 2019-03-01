@@ -36,9 +36,10 @@ def main(args):
     # Image Preprocessing
     # For normalization, see https://github.com/pytorch/vision#models
     transform = transforms.Compose([
-        transforms.RandomResizedCrop(args.crop_size),
-        transforms.RandomHorizontalFlip(), 
-        transforms.ToTensor(), 
+        transforms.Resize((int(args.crop_size*1.15), int(args.crop_size*1.15))),
+        transforms.RandomCrop(args.crop_size),
+        transforms.RandomHorizontalFlip(),
+        transforms.ToTensor(),
         transforms.Normalize((0.485, 0.456, 0.406),
                              (0.229, 0.224, 0.225))])
     
@@ -119,7 +120,7 @@ def main(args):
             captions = to_var(captions)
             T = to_var(T)
             lengths = [cap_len - 1 for cap_len in lengths]
-            targets = pack_padded_sequence(captions[:,1:], lengths, batch_first=True)[0]
+            targets = pack_padded_sequence(captions[:, 1:], lengths, batch_first=True)[0]
 
             # Forward, Backward and Optimize
             simNet.train()
