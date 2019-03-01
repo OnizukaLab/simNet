@@ -15,7 +15,7 @@ class AttentiveCNN(nn.Module):
         super(AttentiveCNN, self).__init__()
 
         self.log_file = open("V_log.csv", "w")  # 最終的には消す
-        print("LOG:", "A.mean, A.std, A.max, A.min, V.mean, V.std, V.max, V.min, affine_VI.weight_0")
+        # print("LOG:", "A.mean, A.std, A.max, A.min, V.mean, V.std, V.max, V.min, affine_VI.weight_0")
         print("A.mean, A.std, A.max, A.min, V.mean, V.std, V.max, V.min, affine_VI.weight_0", file=self.log_file)
 
         # ResNet-152 backend
@@ -47,18 +47,18 @@ class AttentiveCNN(nn.Module):
         V = A.view(A.size(0), A.size(1), -1).transpose(1,2)
         V = F.relu(self.affine_VI(self.dropout(V)))
 
-        if random() > 0.8:
-            print("LOG:", ", ".join("{:.3f}" for _ in range(9)).format(
-                A.mean().data.cpu().numpy(),
-                A.std().data.cpu().numpy(),
-                A.max().data.cpu().numpy(),
-                A.min().data.cpu().numpy(),
-                V.mean().data.cpu().numpy(),
-                V.std().data.cpu().numpy(),
-                V.max().data.cpu().numpy(),
-                V.min().data.cpu().numpy(),
-                self.affine_VI.weight.data.cpu().numpy()[0, 0]
-            ))
+        # if random() > 0.8:
+        #     print("LOG:", ", ".join("{:.3f}" for _ in range(9)).format(
+        #         A.mean().data.cpu().numpy(),
+        #         A.std().data.cpu().numpy(),
+        #         A.max().data.cpu().numpy(),
+        #         A.min().data.cpu().numpy(),
+        #         V.mean().data.cpu().numpy(),
+        #         V.std().data.cpu().numpy(),
+        #         V.max().data.cpu().numpy(),
+        #         V.min().data.cpu().numpy(),
+        #         self.affine_VI.weight.data.cpu().numpy()[0, 0]
+        #     ))
 
         print("LOG:", ", ".join("{}" for _ in range(9)).format(
             A.mean().data.cpu().numpy(),
