@@ -14,6 +14,7 @@ from coco.pycocotools.coco import COCO
 from coco.pycocoevalcap.eval import COCOEvalCap
 import matplotlib.pyplot as plt
 
+
 # Variable wrapper
 def to_var(x, volatile=False):
     '''
@@ -74,6 +75,7 @@ class CocoEvalLoader(datasets.ImageFolder):
         return img, img_id, filename, T_val
 
 
+# MSCOCO Evaluation function
 def main(args):
     """
     model: trained model to be evaluated
@@ -161,7 +163,6 @@ def main(args):
     print('-----------Evaluation performance on MS-COCO dataset----------')
     for metric, score in list(cocoEval.eval.items()):
         print('%s: %.4f' % (metric, score))
-# MSCOCO Evaluation function
 
 
 if __name__ == '__main__':
