@@ -150,6 +150,9 @@ def main(args):
     resFile = args.save_path
     json.dump(results, open(resFile, 'w'))
 
+    model.encoder.log_file.close()
+    exit(0)
+
     annFile = args.caption_test_path
     coco = COCO(annFile)
     cocoRes = coco.loadRes(resFile)
