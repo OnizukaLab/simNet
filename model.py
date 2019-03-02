@@ -6,20 +6,21 @@ from torch.autograd import Variable
 import torch.nn.functional as F
 from torch.nn import init
 import numpy as np
+from random import random
 
 
 # =========================================simNet=========================================
 class AttentiveCNN(nn.Module):
     def __init__(self, hidden_size):
         super(AttentiveCNN, self).__init__()
-        
+
         # ResNet-152 backend
         resnet = models.resnet152()
-        modules = list(resnet.children())[:-2] # delete the last fc layer and avg pool.
-        resnet_conv = nn.Sequential(*modules) # last conv feature
+        modules = list(resnet.children())[:-2]  # delete the last fc layer and avg pool.
+        resnet_conv = nn.Sequential(*modules)  # last conv feature
         
         self.resnet_conv = resnet_conv
-        self.affine_VI = nn.Linear(2048, hidden_size) # reduce the dimension
+        self.affine_VI = nn.Linear(2048, hidden_size)  # reduce the dimension
         
         # Dropout before affine transformation
         self.dropout = nn.Dropout(0.5)
@@ -38,7 +39,6 @@ class AttentiveCNN(nn.Module):
         """
         # Last conv layer feature map
         A = self.resnet_conv(images)
-        
         # V = [v_1, v_2, ..., v_49]
         V = A.view(A.size(0), A.size(1), -1).transpose(1,2)
         V = F.relu(self.affine_VI(self.dropout(V)))
@@ -169,10 +169,10 @@ class EncoderBlock(nn.Module):
         
         # Final score along vocabulary
         # scores = self.mlp(self.dropout(c_t))
-        c_t = gama_t * s_t + (1-gama_t) * r_t
+        c_t = gama_t * s_t + (1-gama_t) * r_t  # eq15
         scores = self.mlp(self.dropout(c_t))
 
-        return scores
+        return scores, alpha_t, beta_t
 
 
 # Caption Decoder
@@ -218,7 +218,7 @@ class Decoder(nn.Module):
         
         # Reduce the feature map dimension
         V_input = F.relu(self.affine_b(self.dropout(V)))
-        v_g = torch.mean(V_input,dim=1)
+        v_g = torch.mean(V_input, dim=1)
 
         # Word Embedding
         embeddings = self.embed(captions)
@@ -266,12 +266,12 @@ class Decoder(nn.Module):
         if torch.cuda.device_count() > 1:
             device_ids = list(range(torch.cuda.device_count()))
             encoder_block_parallel = nn.DataParallel(self.encoder, device_ids=device_ids)
-            scores = encoder_block_parallel(epoch, hiddens, V, T)
+            scores, image_attn, topic_attn = encoder_block_parallel(epoch, hiddens, V, T)
         else:
-            scores = self.encoder(epoch, hiddens, V, T)
+            scores, image_attn, topic_attn = self.encoder(epoch, hiddens, V, T)
 
         # Return states for Caption Sampling purpose
-        return scores, states
+        return scores, states, image_attn, topic_attn
 
 
 # Whole Architecture with Image Encoder and Caption decoder        
@@ -293,7 +293,7 @@ class Encoder2Decoder(nn.Module):
             V = self.encoder(images)
 
         # Language Modeling on word prediction
-        scores, _ = self.decoder(epoch, V, captions, T)
+        scores, *_ = self.decoder(epoch, V, captions, T)
 
         # Pack it to make criterion calculation more efficient
         packed_scores = pack_padded_sequence(scores, lengths, batch_first=True)
@@ -322,18 +322,24 @@ class Encoder2Decoder(nn.Module):
 
         # Get generated caption idx list
         sampled_ids = []
+        image_attns = []
+        topic_attns = []
 
         # Initial hidden states
         states = None
 
         for i in range(max_len):
-            scores, states = self.decoder(epoch, V, captions, T, states)
+            scores, states, image_attn, topic_attn = self.decoder(epoch, V, captions, T, states)
             captions = scores.max(2)[1]
 
             # Save sampled word
             sampled_ids.append(captions)
+            image_attns.append(image_attn)
+            topic_attns.append(topic_attn)
 
         # caption: B x max_len
         sampled_ids = torch.cat(sampled_ids, dim=1)
+        image_attns = torch.cat(image_attns, dim=1)  # いるかもしれない
+        topic_attns = torch.cat(topic_attns, dim=1)
 
-        return sampled_ids
+        return sampled_ids, image_attns, topic_attns
