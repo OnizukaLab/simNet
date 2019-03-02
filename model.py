@@ -6,20 +6,21 @@ from torch.autograd import Variable
 import torch.nn.functional as F
 from torch.nn import init
 import numpy as np
+from random import random
 
 
 # =========================================simNet=========================================
 class AttentiveCNN(nn.Module):
     def __init__(self, hidden_size):
         super(AttentiveCNN, self).__init__()
-        
+
         # ResNet-152 backend
         resnet = models.resnet152()
-        modules = list(resnet.children())[:-2] # delete the last fc layer and avg pool.
-        resnet_conv = nn.Sequential(*modules) # last conv feature
+        modules = list(resnet.children())[:-2]  # delete the last fc layer and avg pool.
+        resnet_conv = nn.Sequential(*modules)  # last conv feature
         
         self.resnet_conv = resnet_conv
-        self.affine_VI = nn.Linear(2048, hidden_size) # reduce the dimension
+        self.affine_VI = nn.Linear(2048, hidden_size)  # reduce the dimension
         
         # Dropout before affine transformation
         self.dropout = nn.Dropout(0.5)
@@ -38,7 +39,6 @@ class AttentiveCNN(nn.Module):
         """
         # Last conv layer feature map
         A = self.resnet_conv(images)
-        
         # V = [v_1, v_2, ..., v_49]
         V = A.view(A.size(0), A.size(1), -1).transpose(1,2)
         V = F.relu(self.affine_VI(self.dropout(V)))
