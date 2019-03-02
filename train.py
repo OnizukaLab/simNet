@@ -145,7 +145,6 @@ def main(args):
                 
         # Save the simNet model after each epoch
         torch.save(simNet.state_dict(), os.path.join(args.model_path, 'simNet-%d.pkl' % (epoch,)))
-    simNet.encoder.log_file.close()
 
 
 if __name__ == '__main__':
