@@ -93,8 +93,8 @@ def main(args):
 
             temp = {'image_id': int(image_ids[image_idx]),
                     'caption': sentence,
-                    "image_attn": final_image_attns.tolist(),  # caption len * 49
-                    "topic_attn": final_topic_attns.tolist()}  # caption len * topic num
+                    "image_attn": final_image_attns,  # caption len * 49
+                    "topic_attn": final_topic_attns}  # caption len * topic num
             results.append(temp)
 
         # Disp evaluation process
