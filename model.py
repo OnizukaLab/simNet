@@ -14,10 +14,6 @@ class AttentiveCNN(nn.Module):
     def __init__(self, hidden_size):
         super(AttentiveCNN, self).__init__()
 
-        self.log_file = open("V_log.csv", "w")  # 最終的には消す
-        print("LOG:", "A.mean, A.std, A.max, A.min, V.mean, V.std, V.max, V.min, affine_VI.weight_0")
-        print("A.mean, A.std, A.max, A.min, V.mean, V.std, V.max, V.min, affine_VI.weight_0", file=self.log_file)
-
         # ResNet-152 backend
         resnet = models.resnet152()
         modules = list(resnet.children())[:-2]  # delete the last fc layer and avg pool.
@@ -47,30 +43,6 @@ class AttentiveCNN(nn.Module):
         V = A.view(A.size(0), A.size(1), -1).transpose(1, 2)
         V = F.relu(self.affine_VI(self.dropout(V)))
 
-        print("LOG:", ", ".join("{:.3f}" for _ in range(9)).format(
-            A.mean().data.cpu().numpy(),
-            A.std().data.cpu().numpy(),
-            A.max().data.cpu().numpy(),
-            A.min().data.cpu().numpy(),
-            V.mean().data.cpu().numpy(),
-            V.std().data.cpu().numpy(),
-            V.max().data.cpu().numpy(),
-            V.min().data.cpu().numpy(),
-            self.affine_VI.weight.data.cpu().numpy()[0, 0]
-        ))
-
-        print(", ".join("{}" for _ in range(9)).format(
-            A.mean().data.cpu().numpy(),
-            A.std().data.cpu().numpy(),
-            A.max().data.cpu().numpy(),
-            A.min().data.cpu().numpy(),
-            V.mean().data.cpu().numpy(),
-            V.std().data.cpu().numpy(),
-            V.max().data.cpu().numpy(),
-            V.min().data.cpu().numpy(),
-            self.affine_VI.weight.data.cpu().numpy()[0, 0]
-        ), file=self.log_file)
-
         return V
 
 
@@ -78,6 +50,12 @@ class AttentiveCNN(nn.Module):
 class EncoderBlock(nn.Module):
     def __init__(self, embed_size, hidden_size, vocab_size):
         super(EncoderBlock, self).__init__()
+
+        self.log_file = open("Attn_log.csv", "w")  # 最終的には消す
+        print("LOG:", "V.mean, V.std, V.max, V.min, alpha_t.mean, alpha_t.std, alpha_t.max, alpha_t.min,"
+                      " beta_t.mean, beta_t.std, beta_t.max, beta_t.min")
+        print("V.mean, V.std, V.max, V.min, alpha_t.mean, alpha_t.std, alpha_t.max, alpha_t.min,"
+              " beta_t.mean, beta_t.std, beta_t.max, beta_t.min", file=self.log_file)
         
         self.affine_ZV = nn.Linear(hidden_size, 49)  # W_zv_output_attention
         self.affine_Zh = nn.Linear(hidden_size, 49)  # W_zh_output_attention
@@ -199,6 +177,36 @@ class EncoderBlock(nn.Module):
         # scores = self.mlp(self.dropout(c_t))
         c_t = gama_t * s_t + (1-gama_t) * r_t  # eq15
         scores = self.mlp(self.dropout(c_t))
+
+        print("LOG:", ", ".join("{:.3f}" for _ in range(12)).format(
+            V.mean().data.cpu().numpy(),
+            V.std().data.cpu().numpy(),
+            V.max().data.cpu().numpy(),
+            V.min().data.cpu().numpy(),
+            alpha_t.mean().data.cpu().numpy(),
+            alpha_t.std().data.cpu().numpy(),
+            alpha_t.max().data.cpu().numpy(),
+            alpha_t.min().data.cpu().numpy(),
+            beta_t.mean().data.cpu().numpy(),
+            beta_t.std().data.cpu().numpy(),
+            beta_t.max().data.cpu().numpy(),
+            beta_t.min().data.cpu().numpy(),
+        ))
+
+        print(", ".join("{}" for _ in range(12)).format(
+            V.mean().data.cpu().numpy(),
+            V.std().data.cpu().numpy(),
+            V.max().data.cpu().numpy(),
+            V.min().data.cpu().numpy(),
+            alpha_t.mean().data.cpu().numpy(),
+            alpha_t.std().data.cpu().numpy(),
+            alpha_t.max().data.cpu().numpy(),
+            alpha_t.min().data.cpu().numpy(),
+            beta_t.mean().data.cpu().numpy(),
+            beta_t.std().data.cpu().numpy(),
+            beta_t.max().data.cpu().numpy(),
+            beta_t.min().data.cpu().numpy(),
+        ), file=self.log_file)
 
         return scores, alpha_t, beta_t
 

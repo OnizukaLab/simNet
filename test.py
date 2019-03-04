@@ -148,7 +148,7 @@ def main(args):
 
     print('------------------------Caption Generated-------------------------------------')
 
-    model.encoder.log_file.close()
+    model.decoder.encoder.log_file.close()
     exit(0)
 
     # Evaluate the results based on the COCO API
