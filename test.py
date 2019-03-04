@@ -148,6 +148,9 @@ def main(args):
 
     print('------------------------Caption Generated-------------------------------------')
 
+    model.encoder.log_file.close()
+    exit(0)
+
     # Evaluate the results based on the COCO API
     resFile = args.save_path
     json.dump(results, open(resFile, 'w'))

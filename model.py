@@ -14,6 +14,10 @@ class AttentiveCNN(nn.Module):
     def __init__(self, hidden_size):
         super(AttentiveCNN, self).__init__()
 
+        self.log_file = open("V_log.csv", "w")  # 最終的には消す
+        print("LOG:", "A.mean, A.std, A.max, A.min, V.mean, V.std, V.max, V.min, affine_VI.weight_0")
+        print("A.mean, A.std, A.max, A.min, V.mean, V.std, V.max, V.min, affine_VI.weight_0", file=self.log_file)
+
         # ResNet-152 backend
         resnet = models.resnet152()
         modules = list(resnet.children())[:-2]  # delete the last fc layer and avg pool.
@@ -40,8 +44,32 @@ class AttentiveCNN(nn.Module):
         # Last conv layer feature map
         A = self.resnet_conv(images)
         # V = [v_1, v_2, ..., v_49]
-        V = A.view(A.size(0), A.size(1), -1).transpose(1,2)
+        V = A.view(A.size(0), A.size(1), -1).transpose(1, 2)
         V = F.relu(self.affine_VI(self.dropout(V)))
+
+        print("LOG:", ", ".join("{:.3f}" for _ in range(9)).format(
+            A.mean().data.cpu().numpy(),
+            A.std().data.cpu().numpy(),
+            A.max().data.cpu().numpy(),
+            A.min().data.cpu().numpy(),
+            V.mean().data.cpu().numpy(),
+            V.std().data.cpu().numpy(),
+            V.max().data.cpu().numpy(),
+            V.min().data.cpu().numpy(),
+            self.affine_VI.weight.data.cpu().numpy()[0, 0]
+        ))
+
+        print(", ".join("{}" for _ in range(9)).format(
+            A.mean().data.cpu().numpy(),
+            A.std().data.cpu().numpy(),
+            A.max().data.cpu().numpy(),
+            A.min().data.cpu().numpy(),
+            V.mean().data.cpu().numpy(),
+            V.std().data.cpu().numpy(),
+            V.max().data.cpu().numpy(),
+            V.min().data.cpu().numpy(),
+            self.affine_VI.weight.data.cpu().numpy()[0, 0]
+        ), file=self.log_file)
 
         return V
 
