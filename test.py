@@ -158,7 +158,7 @@ def main(args):
 
     cocoEval = COCOEvalCap(coco, cocoRes)
     cocoEval.params['image_id'] = cocoRes.getImgIds()
-    cocoEval.evaluate()
+    cocoEval.evaluate(metrics=args.metrics)
 
     print('-----------Evaluation performance on MS-COCO dataset----------')
     for metric, score in list(cocoEval.eval.items()):
@@ -180,6 +180,8 @@ if __name__ == '__main__':
     parser.add_argument('--topic_path', type=str,
                         default='./data/topics/image_topic.json',
                         help='path for test topic json file')
+    parser.add_argument("--metrics", type=str,
+                        default="", help="Bleu,METEOR,Rouge,CIDEr,SPICE")
 
     # ---------------------------Hyper Parameter Setup------------------------------------
     parser.add_argument('--save_path', type=str, default='model_generated_caption.json')
