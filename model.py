@@ -166,7 +166,7 @@ class EncoderBlock(nn.Module):
         if epoch <= 20:
             gama_t = 1.0
         else:
-            gama_t = F.sigmoid(score_s - score_r)
+            gama_t = torch.sigmoid(score_s - score_r)
         
         # Final score along vocabulary
         # scores = self.mlp(self.dropout(c_t))
