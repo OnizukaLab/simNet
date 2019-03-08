@@ -29,7 +29,7 @@ class AttentiveCNN(nn.Module):
 
     def init_weights(self):
         """Initialize the weights."""
-        init.kaiming_uniform(self.affine_VI.weight, mode='fan_in')
+        init.kaiming_uniform_(self.affine_VI.weight, mode='fan_in')
         self.affine_VI.bias.data.fill_(0)
         
     def forward(self, images):
@@ -78,34 +78,34 @@ class EncoderBlock(nn.Module):
         
     def init_weights(self):
         """Initialize the weights."""
-        init.xavier_uniform(self.affine_ZV.weight)
+        init.xavier_uniform_(self.affine_ZV.weight)
         self.affine_ZV.bias.data.fill_(0)
-        init.xavier_uniform(self.affine_Zh.weight)
+        init.xavier_uniform_(self.affine_Zh.weight)
         self.affine_Zh.bias.data.fill_(0)
-        init.xavier_uniform(self.affine_alphaz.weight)
+        init.xavier_uniform_(self.affine_alphaz.weight)
         self.affine_alphaz.bias.data.fill_(0)
 
-        init.xavier_uniform(self.affine_QT.weight)
+        init.xavier_uniform_(self.affine_QT.weight)
         self.affine_QT.bias.data.fill_(0)
-        init.xavier_uniform(self.affine_Qh.weight)
+        init.xavier_uniform_(self.affine_Qh.weight)
         self.affine_Qh.bias.data.fill_(0)
-        init.xavier_uniform(self.affine_betaq.weight)
+        init.xavier_uniform_(self.affine_betaq.weight)
         self.affine_betaq.bias.data.fill_(0)
 
-        init.xavier_uniform(self.affine_sq.weight)
+        init.xavier_uniform_(self.affine_sq.weight)
         self.affine_sq.bias.data.fill_(0)
-        init.xavier_uniform(self.affine_sh.weight)
+        init.xavier_uniform_(self.affine_sh.weight)
         self.affine_sh.bias.data.fill_(0)
 
-        init.xavier_uniform(self.affine_Ss.weight)
+        init.xavier_uniform_(self.affine_Ss.weight)
         self.affine_Ss.bias.data.fill_(0)
-        init.xavier_uniform(self.affine_Sr.weight)
+        init.xavier_uniform_(self.affine_Sr.weight)
         self.affine_Sr.bias.data.fill_(0)
 
-        init.xavier_uniform(self.affine_sz.weight)
+        init.xavier_uniform_(self.affine_sz.weight)
         self.affine_sz.bias.data.fill_(0)
 
-        init.kaiming_normal(self.mlp.weight, mode='fan_in')
+        init.kaiming_normal_(self.mlp.weight, mode='fan_in')
         self.mlp.bias.data.fill_(0)
         
     def forward(self, epoch, h_t, V, T):
@@ -117,7 +117,8 @@ class EncoderBlock(nn.Module):
         # W_ZV * V + W_Zh * h_t * 1^T
         content_V = self.affine_ZV(self.dropout(V)).unsqueeze(1) + self.affine_Zh(self.dropout(h_t)).unsqueeze(2)
 
-        # visual_t = W_alphaz * tanh(content_V)
+        # visual_t = W_alphaz *
+        # (content_V)
         visual_t = self.affine_alphaz(self.dropout(F.tanh(content_V))).squeeze(3)
         alpha_t = F.softmax(visual_t.view(-1, visual_t.size(2))).view(visual_t.size(0), visual_t.size(1), -1)
 
@@ -204,14 +205,14 @@ class Decoder(nn.Module):
 
     def init_weights(self):
         """Initialize the weights."""
-        init.kaiming_uniform(self.affine_b.weight, mode='fan_in')
+        init.kaiming_uniform_(self.affine_b.weight, mode='fan_in')
         self.affine_b.bias.data.fill_(0)
 
-        init.xavier_uniform(self.affine_ZV_input.weight)
+        init.xavier_uniform_(self.affine_ZV_input.weight)
         self.affine_ZV_input.bias.data.fill_(0)
-        init.xavier_uniform(self.affine_Zh_input.weight)
+        init.xavier_uniform_(self.affine_Zh_input.weight)
         self.affine_Zh_input.bias.data.fill_(0)
-        init.xavier_uniform(self.affine_alphaz_input.weight)
+        init.xavier_uniform_(self.affine_alphaz_input.weight)
         self.affine_alphaz_input.bias.data.fill_(0)
 
     def forward(self, epoch, V, captions, T, states=None):
