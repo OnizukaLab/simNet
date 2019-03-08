@@ -120,7 +120,7 @@ class EncoderBlock(nn.Module):
         # visual_t = W_alphaz *
         # (content_V)
         visual_t = self.affine_alphaz(self.dropout(torch.tanh(content_V))).squeeze(3)
-        alpha_t = F.softmax(visual_t.view(-1, visual_t.size(2))).view(visual_t.size(0), visual_t.size(1), -1)
+        alpha_t = F.softmax(visual_t.view(-1, visual_t.size(2)), dim=1).view(visual_t.size(0), visual_t.size(1), -1)
 
         z_t = torch.bmm(alpha_t, V).squeeze(2)
         r_t = torch.tanh(self.affine_sz(self.dropout(z_t)))
@@ -130,7 +130,7 @@ class EncoderBlock(nn.Module):
 
         # topic_t = W_betaq * tanh(content_T)
         topic_t = self.affine_betaq(self.dropout(torch.tanh(content_T))).squeeze(3)
-        beta_t = F.softmax(topic_t.view(-1, topic_t.size(2))).view(topic_t.size(0), topic_t.size(1), -1)
+        beta_t = F.softmax(topic_t.view(-1, topic_t.size(2)), dim=1).view(topic_t.size(0), topic_t.size(1), -1)
 
         q_t = torch.bmm(beta_t, T).squeeze(2)
         s_t = torch.tanh(self.affine_sq(self.dropout(q_t)) + self.affine_sh(self.dropout(h_t)))
@@ -248,11 +248,14 @@ class Decoder(nn.Module):
                 x_t = torch.cat((x_t, v_g.unsqueeze(1).expand_as(x_t)), dim=2)
             else:
                 # W_ZV * V + W_Zh * h_t * 1^T
-                content_v_input = self.affine_ZV_input(self.dropout(V_input)).unsqueeze(1) + self.affine_Zh_input(self.dropout(h_t)).unsqueeze(2)
+                content_v_input = self.affine_ZV_input(self.dropout(V_input)).unsqueeze(1)\
+                                  + self.affine_Zh_input(self.dropout(h_t)).unsqueeze(2)
 
                 # visual_t = W_alphaz * tanh(content_v_input)
                 visual_t_input = self.affine_alphaz_input(self.dropout(torch.tanh(content_v_input))).squeeze(3)
-                alpha_t_input = F.softmax(visual_t_input.view(-1, visual_t_input.size(2))).view(visual_t_input.size(0),visual_t_input.size(1), -1)
+                alpha_t_input = F.softmax(
+                    visual_t_input.view(-1, visual_t_input.size(2)), dim=1
+                ).view(visual_t_input.size(0), visual_t_input.size(1), -1)
                 z_t_input = torch.bmm(alpha_t_input, V_input).squeeze(2)
 
                 # x_t =[embeddings;z_t_input]
