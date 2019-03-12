@@ -29,7 +29,7 @@ class AttentiveCNN(nn.Module):
 
     def init_weights(self):
         """Initialize the weights."""
-        init.kaiming_uniform(self.affine_VI.weight, mode='fan_in')
+        init.kaiming_uniform_(self.affine_VI.weight, mode='fan_in')
         self.affine_VI.bias.data.fill_(0)
         
     def forward(self, images):
@@ -78,34 +78,34 @@ class EncoderBlock(nn.Module):
         
     def init_weights(self):
         """Initialize the weights."""
-        init.xavier_uniform(self.affine_ZV.weight)
+        init.xavier_uniform_(self.affine_ZV.weight)
         self.affine_ZV.bias.data.fill_(0)
-        init.xavier_uniform(self.affine_Zh.weight)
+        init.xavier_uniform_(self.affine_Zh.weight)
         self.affine_Zh.bias.data.fill_(0)
-        init.xavier_uniform(self.affine_alphaz.weight)
+        init.xavier_uniform_(self.affine_alphaz.weight)
         self.affine_alphaz.bias.data.fill_(0)
 
-        init.xavier_uniform(self.affine_QT.weight)
+        init.xavier_uniform_(self.affine_QT.weight)
         self.affine_QT.bias.data.fill_(0)
-        init.xavier_uniform(self.affine_Qh.weight)
+        init.xavier_uniform_(self.affine_Qh.weight)
         self.affine_Qh.bias.data.fill_(0)
-        init.xavier_uniform(self.affine_betaq.weight)
+        init.xavier_uniform_(self.affine_betaq.weight)
         self.affine_betaq.bias.data.fill_(0)
 
-        init.xavier_uniform(self.affine_sq.weight)
+        init.xavier_uniform_(self.affine_sq.weight)
         self.affine_sq.bias.data.fill_(0)
-        init.xavier_uniform(self.affine_sh.weight)
+        init.xavier_uniform_(self.affine_sh.weight)
         self.affine_sh.bias.data.fill_(0)
 
-        init.xavier_uniform(self.affine_Ss.weight)
+        init.xavier_uniform_(self.affine_Ss.weight)
         self.affine_Ss.bias.data.fill_(0)
-        init.xavier_uniform(self.affine_Sr.weight)
+        init.xavier_uniform_(self.affine_Sr.weight)
         self.affine_Sr.bias.data.fill_(0)
 
-        init.xavier_uniform(self.affine_sz.weight)
+        init.xavier_uniform_(self.affine_sz.weight)
         self.affine_sz.bias.data.fill_(0)
 
-        init.kaiming_normal(self.mlp.weight, mode='fan_in')
+        init.kaiming_normal_(self.mlp.weight, mode='fan_in')
         self.mlp.bias.data.fill_(0)
         
     def forward(self, epoch, h_t, V, T):
@@ -117,22 +117,23 @@ class EncoderBlock(nn.Module):
         # W_ZV * V + W_Zh * h_t * 1^T
         content_V = self.affine_ZV(self.dropout(V)).unsqueeze(1) + self.affine_Zh(self.dropout(h_t)).unsqueeze(2)
 
-        # visual_t = W_alphaz * tanh(content_V)
-        visual_t = self.affine_alphaz(self.dropout(F.tanh(content_V))).squeeze(3)
-        alpha_t = F.softmax(visual_t.view(-1, visual_t.size(2))).view(visual_t.size(0), visual_t.size(1), -1)
+        # visual_t = W_alphaz *
+        # (content_V)
+        visual_t = self.affine_alphaz(self.dropout(torch.tanh(content_V))).squeeze(3)
+        alpha_t = F.softmax(visual_t.view(-1, visual_t.size(2)), dim=1).view(visual_t.size(0), visual_t.size(1), -1)
 
         z_t = torch.bmm(alpha_t, V).squeeze(2)
-        r_t = F.tanh(self.affine_sz(self.dropout(z_t)))
+        r_t = torch.tanh(self.affine_sz(self.dropout(z_t)))
 
         # -------------------------Topic Attention  :q_t------------------------------------------------------------
         content_T = self.affine_QT(self.dropout(T)).unsqueeze(1) + self.affine_Qh(self.dropout(h_t)).unsqueeze(2)
 
         # topic_t = W_betaq * tanh(content_T)
-        topic_t = self.affine_betaq(self.dropout(F.tanh(content_T))).squeeze(3)
-        beta_t = F.softmax(topic_t.view(-1, topic_t.size(2))).view(topic_t.size(0), topic_t.size(1), -1)
+        topic_t = self.affine_betaq(self.dropout(torch.tanh(content_T))).squeeze(3)
+        beta_t = F.softmax(topic_t.view(-1, topic_t.size(2)), dim=1).view(topic_t.size(0), topic_t.size(1), -1)
 
         q_t = torch.bmm(beta_t, T).squeeze(2)
-        s_t = F.tanh(self.affine_sq(self.dropout(q_t)) + self.affine_sh(self.dropout(h_t)))
+        s_t = torch.tanh(self.affine_sq(self.dropout(q_t)) + self.affine_sh(self.dropout(h_t)))
 
         # ------------------------------------------Merging Gate----------------------------------------------------
         for ip in range(r_t.size(1)):
@@ -142,7 +143,7 @@ class EncoderBlock(nn.Module):
             s_t_extended = torch.cat([s_t_ip] * 5, 1)
 
             content_s_t = self.affine_Ss(s_t_extended).unsqueeze(1) + self.affine_Qh(h_t).unsqueeze(2)
-            score_s_t = self.affine_betaq(F.tanh(content_s_t)).squeeze(3)
+            score_s_t = self.affine_betaq(torch.tanh(content_s_t)).squeeze(3)
 
             if ip == 0:
                 score_s = score_s_t[0][0][0].view(1, 1, 1)
@@ -154,7 +155,7 @@ class EncoderBlock(nn.Module):
             r_t_extended = torch.cat([r_t_ip] * 5, 1)
 
             content_r_t = self.affine_Sr(r_t_extended).unsqueeze(1) + self.affine_Qh(h_t).unsqueeze(2)
-            score_r_t = self.affine_betaq(F.tanh(content_r_t)).squeeze(3)
+            score_r_t = self.affine_betaq(torch.tanh(content_r_t)).squeeze(3)
 
             if ip == 0:
                 score_r = score_r_t[0][0][0].view(1, 1, 1)
@@ -165,7 +166,7 @@ class EncoderBlock(nn.Module):
         if epoch <= 20:
             gama_t = 1.0
         else:
-            gama_t = F.sigmoid(score_s - score_r)
+            gama_t = torch.sigmoid(score_s - score_r)
         
         # Final score along vocabulary
         # scores = self.mlp(self.dropout(c_t))
@@ -204,14 +205,14 @@ class Decoder(nn.Module):
 
     def init_weights(self):
         """Initialize the weights."""
-        init.kaiming_uniform(self.affine_b.weight, mode='fan_in')
+        init.kaiming_uniform_(self.affine_b.weight, mode='fan_in')
         self.affine_b.bias.data.fill_(0)
 
-        init.xavier_uniform(self.affine_ZV_input.weight)
+        init.xavier_uniform_(self.affine_ZV_input.weight)
         self.affine_ZV_input.bias.data.fill_(0)
-        init.xavier_uniform(self.affine_Zh_input.weight)
+        init.xavier_uniform_(self.affine_Zh_input.weight)
         self.affine_Zh_input.bias.data.fill_(0)
-        init.xavier_uniform(self.affine_alphaz_input.weight)
+        init.xavier_uniform_(self.affine_alphaz_input.weight)
         self.affine_alphaz_input.bias.data.fill_(0)
 
     def forward(self, epoch, V, captions, T, states=None):
@@ -247,11 +248,14 @@ class Decoder(nn.Module):
                 x_t = torch.cat((x_t, v_g.unsqueeze(1).expand_as(x_t)), dim=2)
             else:
                 # W_ZV * V + W_Zh * h_t * 1^T
-                content_v_input = self.affine_ZV_input(self.dropout(V_input)).unsqueeze(1) + self.affine_Zh_input(self.dropout(h_t)).unsqueeze(2)
+                content_v_input = self.affine_ZV_input(self.dropout(V_input)).unsqueeze(1)\
+                                  + self.affine_Zh_input(self.dropout(h_t)).unsqueeze(2)
 
                 # visual_t = W_alphaz * tanh(content_v_input)
-                visual_t_input = self.affine_alphaz_input(self.dropout(F.tanh(content_v_input))).squeeze(3)
-                alpha_t_input = F.softmax(visual_t_input.view(-1, visual_t_input.size(2))).view(visual_t_input.size(0),visual_t_input.size(1), -1)
+                visual_t_input = self.affine_alphaz_input(self.dropout(torch.tanh(content_v_input))).squeeze(3)
+                alpha_t_input = F.softmax(
+                    visual_t_input.view(-1, visual_t_input.size(2)), dim=1
+                ).view(visual_t_input.size(0), visual_t_input.size(1), -1)
                 z_t_input = torch.bmm(alpha_t_input, V_input).squeeze(2)
 
                 # x_t =[embeddings;z_t_input]
