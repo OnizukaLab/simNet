@@ -40,9 +40,14 @@ class TopicExtractor:
                 print("Kill")
                 exit(0)
 
-        vocab_file = args.vocab
+        vocab_file = args.vocab  # 訓練時と同じ語彙ファイル
         assert isfile(vocab_file), MESSAGES["isfile"] % vocab_file
         self.vocab = utils.load_variables(vocab_file)
+
+        my_vocab_file = args.my_vocab  # 自由に設定する語彙ファイル
+        assert isfile(my_vocab_file), MESSAGES["isfile"] % my_vocab_file
+        with open(my_vocab_file, "r") as fh:
+            self.my_vocab = json.load(fh)  # ["cat", "dog", ...]
 
         # Set up Caffe
         caffe.set_mode_gpu()
@@ -59,9 +64,7 @@ class TopicExtractor:
         self.model = test_model.load_model(prototxt_deploy, model_file, base_image_size, mean, self.vocab)
 
         # define functional words
-        self.functional_words = ['a', 'on', 'of', 'the', 'in', 'with', 'and', 'is',
-                                 'to', 'an', 'two', 'at', 'next', 'are', "that", "it"]
-        self.is_functional = np.array([x not in self.functional_words for x in self.vocab['words']])
+        self.is_functional = np.array([x in self.my_vocab for x in self.vocab["words"]])
 
         # load the score precision mapping file
         eval_file = model_file + '_output/coco_valid1_eval.pkl'
@@ -180,6 +183,8 @@ if __name__ == "__main__":
                         type=str, dest="coco")
     parser.add_argument("--output", default="image_topics.json",
                         type=str, dest="output")
+    parser.add_argument("--my_vocab", default="topic_vocab.json",
+                        type=str, dest="my_vocab")
     parser.add_argument("--tgt", default="val_train",
                         type=str, dest="tgt")
     # -------------------------Model Settings---------------------------------------------------------
