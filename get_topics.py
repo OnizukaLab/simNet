@@ -81,89 +81,34 @@ class TopicExtractor:
         image_topics = []
         image_id_batch = []
         image_batch = []
-        # For val data
-        if "val" in self.tgt:
-            print("val2014")
-            for image_file in listdir(join(self.coco, "val2014")):
-                m = self.filename_template.match(image_file)
-                if m:
-                    image_id = int(m.group(2))
-                    image_id_batch.append(image_id)
 
-                    im = cv2.imread(join(self.coco, "val2014", image_file))
-                    image_batch.append(im)
+        for tgt in ("val", "train", "test"):
+            if tgt in self.tgt:
+                print(tgt+"2014")
+                for image_file in listdir(join(self.coco, tgt+"2014")):
+                    m = self.filename_template.match(image_file)
+                    if m:
+                        image_id = int(m.group(2))
+                        image_id_batch.append(image_id)
 
-                if len(image_id_batch) == self.bs:
-                    sys.stdout.write("*")
-                    sys.stdout.flush()
-                    prec = self.__mk_prec_from_batch(image_batch)
-                    for i in range(self.bs):
-                        topics = self.__output_words_image(prec[i, :])
-                        im_id = image_id_batch[i]
-                        if len(topics) != self.topic_num:
-                            print(MESSAGES["topic_num"] % (self.topic_num, im_id, " ".join(topics)))
-                        image_topics.append(
-                            {"image_id": im_id, "image_concepts": topics}
-                        )
-                    # Delete current batch
-                    image_id_batch = []
-                    image_batch = []
+                        im = cv2.imread(join(self.coco, tgt+"2014", image_file))
+                        image_batch.append(im)
 
-        # For test data
-        if "test" in self.tgt:
-            print("test2014")
-            for image_file in listdir(join(self.coco, "test2014")):
-                m = self.filename_template.match(image_file)
-                if m:
-                    image_id = int(m.group(2))
-                    image_id_batch.append(image_id)
-
-                    im = cv2.imread(join(self.coco, "test2014", image_file))
-                    image_batch.append(im)
-
-                if len(image_id_batch) == self.bs:
-                    sys.stdout.write("*")
-                    sys.stdout.flush()
-                    prec = self.__mk_prec_from_batch(image_batch)
-                    for i in range(self.bs):
-                        topics = self.__output_words_image(prec[i, :])
-                        im_id = image_id_batch[i]
-                        if len(topics) != self.topic_num:
-                            print(MESSAGES["topic_num"] % (self.topic_num, im_id, " ".join(topics)))
-                        image_topics.append(
-                            {"image_id": im_id, "image_concepts": topics}
-                        )
-                    # Delete current batch
-                    image_id_batch = []
-                    image_batch = []
- 
-        # For train (if val data remains, mixed)
-        if "train" in self.tgt:
-            print("\ntrain2014")
-            for image_file in listdir(join(self.coco, "train2014")):
-                m = self.filename_template.match(image_file)
-                if m:
-                    image_id = int(m.group(2))
-                    image_id_batch.append(image_id)
-
-                    im = cv2.imread(join(self.coco, "train2014", image_file))
-                    image_batch.append(im)
-
-                if len(image_id_batch) == self.bs:
-                    sys.stdout.write("*")
-                    sys.stdout.flush()
-                    prec = self.__mk_prec_from_batch(image_batch)
-                    for i in range(self.bs):
-                        topics = self.__output_words_image(prec[i, :])
-                        im_id = image_id_batch[i]
-                        if len(topics) != self.topic_num:
-                            print(MESSAGES["topic_num"] % (self.topic_num, im_id, " ".join(topics)))
-                        image_topics.append(
-                            {"image_id": im_id, "image_concepts": topics}
-                        )
-                    # Delete current batch
-                    image_id_batch = []
-                    image_batch = []
+                    if len(image_id_batch) == self.bs:
+                        sys.stdout.write("*")
+                        sys.stdout.flush()
+                        prec = self.__mk_prec_from_batch(image_batch)
+                        for i in range(self.bs):
+                            topics = self.__output_words_image(prec[i, :])
+                            im_id = image_id_batch[i]
+                            if len(topics) != self.topic_num:
+                                print(MESSAGES["topic_num"] % (self.topic_num, im_id, " ".join(topics)))
+                            image_topics.append(
+                                {"image_id": im_id, "image_concepts": topics}
+                            )
+                        # Delete current batch
+                        image_id_batch = []
+                        image_batch = []
 
         # For remaining batch
         if image_id_batch:
