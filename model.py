@@ -167,7 +167,6 @@ class EncoderBlock(nn.Module):
             gama_t = 1.0
         else:
             gama_t = torch.sigmoid(score_s - score_r)
-        
         # Final score along vocabulary
         # scores = self.mlp(self.dropout(c_t))
         c_t = gama_t * s_t + (1-gama_t) * r_t  # eq15
