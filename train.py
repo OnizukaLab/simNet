@@ -100,12 +100,12 @@ def main(args):
             
         # Start Learning Rate Decay
         if epoch > args.lr_decay:
-                
+
             frac = float(epoch - args.lr_decay) / args.learning_rate_decay_every
             decay_factor = math.pow(0.5, frac)
 
             # Decay the learning rate
-            learning_rate = args.learning_rate * decay_factor
+            learning_rate = 0.00001 * decay_factor
         
         print('Learning Rate for Epoch %d: %.6f' % (epoch, learning_rate))
 
